@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scam Message Checker</title>
+<style>
+  :root {
+    --bg: #0a0a0c;
+    --panel: #141518;
+    --panel2: #1c1e23;
+    --border: #2a2d34;
+    --text: #e8eaed;
+    --muted: #9aa0aa;
+    --accent: #4dd0a7;
+    --warn: #ffb347;
+    --danger: #ff5c5c;
+    --mono: "Consolas", "JetBrains Mono", monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.55;
+    min-height: 100vh;
+  }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 24px 16px 64px; }
+  header { padding: 28px 0 8px; }
+  .badge {
+    display: inline-block; font-family: var(--mono); font-size: 11px;
+    letter-spacing: 2px; color: var(--accent); border: 1px solid var(--border);
+    padding: 4px 10px; border-radius: 3px; margin-bottom: 14px;
+    background: var(--panel);
+  }
+  h1 { font-size: clamp(26px, 5vw, 36px); font-weight: 800; letter-spacing: -0.5px; }
+  h1 .dim { color: var(--muted); }
+  header p { color: var(--muted); margin-top: 8px; max-width: 560px; font-size: 15px; }
+
+  section { margin-top: 32px; }
+  .sec-label {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 2px;
+    color: var(--muted); text-transform: uppercase; margin-bottom: 10px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .sec-label::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+  h2 { font-size: 20px; margin-bottom: 4px; }
+  .sec-desc { color: var(--muted); font-size: 14px; margin-bottom: 14px; }
+
+  .panel {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 8px; padding: 18px;
+  }
+
+  /* Section 1 */
+  textarea {
+    width: 100%; min-height: 150px; background: var(--panel2);
+    border: 1px solid var(--border); border-radius: 6px;
+    color: var(--text); font-family: var(--mono); font-size: 14px;
+    padding: 14px; resize: vertical;
+  }
+  textarea:focus { outline: none; border-color: var(--accent); }
+  .btn-row { display: flex; gap: 12px; margin-top: 14px; flex-wrap: wrap; }
+  button.primary {
+    background: var(--accent); color: #06110c; border: none;
+    font-weight: 700; font-size: 15px; padding: 12px 26px;
+    border-radius: 6px; cursor: pointer; font-family: var(--mono);
+    letter-spacing: 1px;
+  }
+  button.primary:hover { filter: brightness(1.1); }
+  button.ghost {
+    background: transparent; color: var(--muted); border: 1px solid var(--border);
+    font-size: 13px; padding: 12px 18px; border-radius: 6px; cursor: pointer;
+  }
+  button.ghost:hover { color: var(--text); border-color: var(--muted); }
+
+  .examples { margin-top: 20px; }
+  .examples h3 { font-size: 13px; color: var(--muted); font-family: var(--mono); letter-spacing: 1px; margin-bottom: 10px; }
+  .example {
+    background: var(--panel2); border: 1px solid var(--border); border-left: 3px solid var(--warn);
+    border-radius: 6px; padding: 12px 14px; margin-bottom: 10px; cursor: pointer;
+    font-size: 14px; transition: border-color .15s;
+  }
+  .example:hover { border-color: var(--accent); }
+  .example .tag { font-family: var(--mono); font-size: 10px; color: var(--warn); letter-spacing: 1px; display: block; margin-bottom: 4px; }
+  .example .txt { color: var(--muted); font-style: italic; }
+
+  /* Section 2 */
+  #cluesBox .empty { color: var(--muted); font-size: 14px; font-family: var(--mono); }
+  .clue {
+    display: flex; gap: 12px; align-items: flex-start;
+    background: var(--panel2); border: 1px solid var(--border);
+    border-radius: 6px; padding: 12px 14px; margin-bottom: 10px;
+  }
+  .clue .dot { color: var(--danger); font-family: var(--mono); font-weight: 700; flex-shrink: 0; }
+  .clue .body strong { display: block; font-size: 14px; }
+  .clue .body span { color: var(--muted); font-size: 13px; }
+
+  /* Section 3 */
+  .verdict { display: flex; flex-direction: column; gap: 14px; }
+  .type-chip {
+    display: inline-block; align-self: flex-start;
+    font-family: var(--mono); font-size: 14px; font-weight: 700;
+    letter-spacing: 1px; padding: 8px 16px; border-radius: 4px;
+    background: rgba(255, 92, 92, .12); color: var(--danger);
+    border: 1px solid rgba(255, 92, 92, .4);
+  }
+  .type-chip.safe { background: rgba(77, 208, 167, .1); color: var(--accent); border-color: rgba(77, 208, 167, .4); }
+  .advice {
+    border-left: 3px solid var(--accent); background: var(--panel2);
+    border-radius: 0 6px 6px 0; padding: 14px 16px; font-size: 15px;
+  }
+  .advice .head { font-family: var(--mono); font-size: 11px; letter-spacing: 2px; color: var(--accent); display: block; margin-bottom: 6px; }
+  .riskline { color: var(--muted); font-size: 13px; font-family: var(--mono); }
+
+  footer { margin-top: 56px; color: var(--muted); font-size: 12px; font-family: var(--mono); border-top: 1px solid var(--border); padding-top: 16px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="badge">SCAM//CHECKER — OFFLINE TOOL</span>
+    <h1>Scam Message <span class="dim">Checker</span></h1>
+    <p>Paste a suspicious SMS, WhatsApp or email message. This tool scans it for warning signs and suggests a safe next step. Nothing is saved or sent anywhere.</p>
+  </header>
+
+  <!-- SECTION 1: MESSAGE BOX -->
+  <section id="sec-message">
+    <div class="sec-label">01 / Message Box</div>
+    <h2>Paste the suspicious message</h2>
+    <p class="sec-desc">Copy the full message you received and paste it below, then tap Check.</p>
+    <div class="panel">
+      <textarea id="msgInput" placeholder="Paste the message here... e.g. 'Your Maybank account has been locked. Click this link to verify...'"></textarea>
+      <div class="btn-row">
+        <button class="primary" id="checkBtn">▸ CHECK MESSAGE</button>
+        <button class="ghost" id="clearBtn">Clear</button>
+      </div>
+      <div class="examples" id="examples">
+        <h3>SAMPLE MESSAGES — TAP TO LOAD (MADE-UP EXAMPLES)</h3>
+        <div class="example" data-idx="0">
+          <span class="tag">SAMPLE 01 — SMS</span>
+          <span class="txt">"MAYBANK ALERT: Your online banking has been suspended due to suspicious activity. Verify your IC number and password immediately at maybank-secure-login.top or your account will be closed within 24 hours."</span>
+        </div>
+        <div class="example" data-idx="1">
+          <span class="tag">SAMPLE 02 — WHATSAPP</span>
+          <span class="txt">"Pos Laju: Your parcel MY88291 is held at customs. Pay RM3.80 handling fee at poslaju-tracking.my/fee to release delivery today."</span>
+        </div>
+        <div class="example" data-idx="2">
+          <span class="tag">SAMPLE 03 — SMS</span>
+          <span class="txt">"Selamat! You have won the Shopee Lucky Draw RM8,000 cash. Transfer RM50 processing fee via DuitNow to claim your prize before 6pm today."</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 2: SCAM CLUES -->
+  <section id="sec-clues">
+    <div class="sec-label">02 / Scam Clues</div>
+    <h2>Warning signs found</h2>
+    <p class="sec-desc">Risky phrases and patterns detected in the message, explained in plain words.</p>
+    <div class="panel" id="cluesBox">
+      <div class="empty">[ no message checked yet — results appear here ]</div>
+    </div>
+  </section>
+
+  <!-- SECTION 3: WHAT TO DO NEXT -->
+  <section id="sec-next">
+    <div class="sec-label">03 / What To Do Next</div>
+    <h2>Verdict &amp; safe next step</h2>
+    <p class="sec-desc">A likely scam type label and one calm, simple step to stay safe.</p>
+    <div class="panel verdict" id="nextBox">
+      <div class="empty" style="color:var(--muted);font-size:14px;font-family:var(--mono)">[ awaiting check ]</div>
+    </div>
+  </section>
+
+  <footer>
+    DISCLAIMER: This tool uses simple pattern matching on text you type. It runs entirely in your browser — nothing is uploaded or stored. It is a helper, not a certainty. For real reports, contact the National Scam Response Centre at 997.
+  </footer>
+</div>
+
+<script>
+(function () {
+  var EXAMPLES = [
+    "MAYBANK ALERT: Your online banking has been suspended due to suspicious activity. Verify your IC number and password immediately at maybank-secure-login.top or your account will be closed within 24 hours.",
+    "Pos Laju: Your parcel MY88291 is held at customs. Pay RM3.80 handling fee at poslaju-tracking.my/fee to release delivery today.",
+    "Selamat! You have won the Shopee Lucky Draw RM8,000 cash. Transfer RM50 processing fee via DuitNow to claim your prize before 6pm today."
+  ];
+
+  // Each pattern: regex, short title, plain-words explanation, and scam types it points to.
+  var PATTERNS = [
+    { re: /(urgent|immediately|within\s*\d+\s*(hours?|minutes?|days?)|before\s*\d+\s*(am|pm)|segera|act now|right away|today only)/i,
+      title: "Urgency pressure",
+      explain: "The message pushes you to act fast. Real companies and government agencies do not give you a countdown to avoid trouble.",
+      types: ["Bank scam", "Prize scam", "Parcel scam"] },
+    { re: /(click|tap|log ?in|verify|confirm)\b[^.]*\.(com|net|xyz|top|my|info|online|site|club|link)\b|\bhttps?:\/\/|\bwww\./i,
+      title: "Suspicious link",
+      explain: "There is a web link asking you to log in or confirm something. The web address may look official but is not the real company's site.",
+      types: ["Bank scam", "Parcel scam", "Impersonation scam"] },
+    { re: /(password|pin\b|otp|ic\s*(number|no)\b|nric|credit card|cvv|bank account|no\.? akaun)/i,
+      title: "Asks for personal or banking details",
+      explain: "It wants your IC number, password, OTP or card details. No genuine bank, courier or agency will ever ask for these by message.",
+      types: ["Bank scam", "Impersonation scam"] },
+    { re: /(pay\b|transfer|fee|deposit|duitnow|touch\s*'?n\s*go|rm\s?[\d,.]+)/i,
+      title: "Asks for money or a payment",
+      explain: "It asks you to pay a fee or transfer money. A fee to 'release' something you never ordered, or to claim a prize, is a classic scam move.",
+      types: ["Parcel scam", "Prize scam", "Job scam"] },
+    { re: /(won\b|winner|prize|lucky draw|menang|hadiah|cashback|reward)/i,
+      title: "Unexpected prize",
+      explain: "It says you won something you never entered. Real contest winners are never asked to pay first.",
+      types: ["Prize scam"] },
+    { re: /(parcel|package|courier|pos ?laju|j&t|jnt|dhl|customs|delivery|shipment|tracking|penghantaran)/i,
+      title: "Parcel or delivery hook",
+      explain: "It mentions a parcel, customs hold or delivery problem. Scammers use courier names because almost everyone is waiting for something.",
+      types: ["Parcel scam"] },
+    { re: /(job|part[- ]?time|kerja sampingan|gaji|salary|easy money|monthly earning|deposit to (start|work))/i,
+      title: "Too-good job offer",
+      explain: "It offers easy money or a part-time job with high pay for simple tasks. Often a first step to trick you into paying a 'deposit'.",
+      types: ["Job scam"] },
+    { re: /(maybank|cimb|public bank|rhb|bank islam|ambank|hong leong|bsn|lhdn|jpj|pos malaysia|shopee|lazada|grab|mcmc|polis|police|tnb)/i,
+      title: "Pretends to be a known organisation",
+      explain: "It uses the name of a bank, agency or big company. Scammers borrow trusted names — always check through the official app or website, never the message.",
+      types: ["Bank scam", "Impersonation scam", "Parcel scam"] },
+    { re: /(account (has been|is) (locked|suspended|blocked|frozen)|legal action|police report|blacklist|warrant)/i,
+      title: "Threat of trouble",
+      explain: "It warns your account will be closed or you will face legal action. Frightening you first is how scammers stop you from thinking clearly.",
+      types: ["Bank scam", "Impersonation scam"] },
+    { re: /(dear (customer|sir|madam|user)|pelanggan yang dihormati)/i,
+      title: "Generic greeting",
+      explain: "It calls you 'Dear customer' instead of your name. Companies that know your account usually know your name.",
+      types: ["Impersonation scam", "Bank scam"] }
+  ];
+
+  // Ordered from most specific to most general, to pick the best single label.
+  var TYPE_RULES = [
+    { type: "Bank scam",          keywords: /(bank|maybank|cimb|bsn|rhb|ambank|public bank|account.*(locked|suspended|blocked|frozen)|password|otp|ic number)/i },
+    { type: "Parcel scam",        keywords: /(parcel|package|courier|pos ?laju|j&t|dhl|customs|delivery|shipment|handling fee)/i },
+    { type: "Job scam",           keywords: /(part[- ]?time|job|kerja sampingan|salary|gaji|easy money|monthly (income|earning))/i },
+    { type: "Prize scam",         keywords: /(won\b|winner|prize|lucky draw|menang|hadiah|cashback|reward)/i },
+    { type: "Impersonation scam", keywords: /(lhdn|jpj|mcmc|polis|police|tnb|officer|shopee|lazada|grab|touch ?'?n ?go)/i }
+  ];
+
+  var input = document.getElementById("msgInput");
+  var checkBtn = document.getElementById("checkBtn");
+  var clearBtn = document.getElementById("clearBtn");
+  var cluesBox = document.getElementById("cluesBox");
+  var nextBox = document.getElementById("nextBox");
+
+  // Pre-run the check on sample 1 so no section is empty on first open.
+  checkMessage(EXAMPLES[0]);
+  input.value = "";
+
+  document.querySelectorAll(".example").forEach(function (el) {
+    el.addEventListener("click", function () {
+      input.value = EXAMPLES[parseInt(el.dataset.idx, 10)];
+      checkMessage(input.value);
+    });
+  });
+
+  checkBtn.addEventListener("click", function () {
+    checkMessage(input.value);
+  });
+  clearBtn.addEventListener("click", function () {
+    input.value = "";
+    cluesBox.innerHTML = '<div class="empty">[ no message checked yet — results appear here ]</div>';
+    nextBox.innerHTML = '<div class="empty" style="color:var(--muted);font-size:14px;font-family:var(--mono)">[ awaiting check ]</div>';
+    input.focus();
+  });
+  input.addEventListener("keydown", function (e) {
+    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) checkMessage(input.value);
+  });
+
+  function checkMessage(text) {
+    text = (text || "").trim();
+    if (!text) {
+      cluesBox.innerHTML = '<div class="empty">[ paste a message first, then tap CHECK MESSAGE ]</div>';
+      nextBox.innerHTML = '<div class="empty" style="color:var(--muted);font-size:14px;font-family:var(--mono)">[ awaiting check ]</div>';
+      return;
+    }
+
+    var hits = PATTERNS.filter(function (p) { return p.re.test(text); });
+
+    // Clues list
+    if (hits.length === 0) {
+      cluesBox.innerHTML =
+        '<div class="clue" style="border-left:3px solid var(--accent)">' +
+        '<span class="dot" style="color:var(--accent)">✓</span>' +
+        '<div class="body"><strong>No obvious scam patterns found</strong>' +
+        '<span>That does not guarantee the message is safe — scammers constantly change their wording. Stay cautious anyway.</span></div></div>';
+    } else {
+      cluesBox.innerHTML = hits.map(function (h) {
+        return '<div class="clue"><span class="dot">▲</span>' +
+          '<div class="body"><strong>' + h.title + '</strong><span>' + h.explain + '</span></div></div>';
+      }).join("");
+    }
+
+    // Scam type guess: keyword rules first, then the type with the most pattern votes.
+    var type = "Unknown / general scam";
+    for (var i = 0; i < TYPE_RULES.length; i++) {
+      if (TYPE_RULES[i].keywords.test(text)) { type = TYPE_RULES[i].type; break; }
+    }
+    if (type === "Unknown / general scam") {
+      var score = {};
+      hits.forEach(function (h) { h.types.forEach(function (t) { score[t] = (score[t] || 0) + 1; }); });
+      for (var t in score) { if (score[t] >= 2) { type = t; break; } }
+    }
+
+    // Advice scales with how many clues were found
+    var advice, risk;
+    if (hits.length === 0) {
+      risk = "RISK LEVEL: LOW — no known patterns detected";
+      advice = "No pressure to act here. If you were not expecting this message, it is still safest to ignore it. Never reply with personal details, and if it claims to be from a real company, contact that company yourself using the number on their official website.";
+    } else if (hits.length <= 2) {
+      risk = "RISK LEVEL: MEDIUM — " + hits.length + " warning sign" + (hits.length > 1 ? "s" : "") + " found";
+      advice = "Do not reply, do not click any link, and do not pay anything. If the message claims to come from a real bank, courier or agency, close it and contact that organisation yourself using the official app or the phone number printed on their website — never the contact details in the message.";
+    } else {
+      risk = "RISK LEVEL: HIGH — " + hits.length + " warning signs found";
+      advice = "Do not reply and do not click anything. This message shows many hallmarks of a scam. Stop all contact, block the sender, and if you already shared details or paid, call your bank immediately and report to the National Scam Response Centre at 997.";
+    }
+
+    nextBox.innerHTML =
+      '<div><span class="type-chip' + (hits.length === 0 ? ' safe' : '') + '">LIKELY SCAM TYPE: ' + type.toUpperCase() + '</span></div>' +
+      '<div class="riskline">' + risk + '</div>' +
+      '<div class="advice"><span class="head">SAFE NEXT STEP</span>' + advice + '</div>';
+  }
+})();
+</script>
+</body>
+</html>
